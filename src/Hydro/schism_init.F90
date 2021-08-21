@@ -1931,12 +1931,12 @@
           !    snx(i)=dot_product(sframe(1:3,1,i),eframe(1:3,1,ie))
           !    sny(i)=dot_product(sframe(1:3,1,i),eframe(1:3,2,ie))
           !endif
-          if(ar2*180/pi>88) then
-            n1=isidenode(1,i)
-            n2=isidenode(2,i)
+          !if(ar2*180/pi>88) then
+          !  n1=isidenode(1,i)
+          !  n2=isidenode(2,i)
             snx(i)=dot_product(sframe(1:3,1,i),psframe(1:3,1,i))
             sny(i)=dot_product(sframe(1:3,1,i),psframe(1:3,2,i))
-          endif
+          !endif
           !if(ar2*180/pi>80) then
           !  write(12,*) i,n1,ar1*180/pi,ar2*180/pi, snx(i), sny(i),pframe(1:3,1,n1),pframe(1:3,2,n1),sframe(1:3,1,i),sframe(1:3,2,i)
           !endif

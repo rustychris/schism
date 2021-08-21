@@ -3797,7 +3797,8 @@
         swild_tmp(1)=xcj(isd0); swild_tmp(2)=ycj(isd0); swild_tmp(3)=zcj(isd0)
         !swild10_tmp to store frame at starting pt for ics=2 (not used for ics=1)
         !Use pframe at 1st node as approx.
-        swild10_tmp(1:3,1:3)=pframe(:,:,isidenode(1,isd0)) !sframe(:,:,isd0)
+        !swild10_tmp(1:3,1:3)=pframe(:,:,isidenode(1,isd0)) !sframe(:,:,isd0)
+        swild10_tmp(1:3,1:3)=psframe(:,:,i) !sframe(:,:,isd0)
 
         do j=jmin,nvrt 
 !         Initialize (xt,yt,zt),nnel and vel.
