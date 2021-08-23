@@ -1808,6 +1808,7 @@
 !...  For ics=1 pframe/sframe2 are not needed
 !$OMP workshare
       pframe=0 !for ics=1
+      sframe2=0 !for ics=1
 !$OMP end workshare
 
       if(ics==2) then
