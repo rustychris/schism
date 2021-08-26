@@ -3796,6 +3796,7 @@
         !swild_tmp to store global coord. of the starting side
         swild_tmp(1)=xcj(isd0); swild_tmp(2)=ycj(isd0); swild_tmp(3)=zcj(isd0)
         !swild10_tmp to store frame at starting pt for ics=2 (not used for ics=1)
+!new37: use sframe2
         !Use sframe2 (lon/lat frame) 
         !swild10_tmp(1:3,1:3)=pframe(:,:,isidenode(1,isd0)) !sframe(:,:,isd0)
         swild10_tmp(1:3,1:3)=sframe2(:,:,i) !sframe(:,:,isd0)
@@ -6246,7 +6247,7 @@
                 surv=surv+sv2(kin,id) !vtmp
               enddo !j
 
-              bcc(1,k,i)=su2(k,i)+shapiro(i)/4.d0*(suru-4.d0*su2(k,i)) !lon/lat frame if ics=2
+              bcc(1,k,i)=su2(k,i)+shapiro(i)/4.d0*(suru-4.d0*su2(k,i)) !new37: lon/lat frame if ics=2
               bcc(2,k,i)=sv2(k,i)+shapiro(i)/4.d0*(surv-4.d0*sv2(k,i))
 
             enddo !k
