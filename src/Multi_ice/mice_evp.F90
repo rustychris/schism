@@ -2,7 +2,8 @@
 subroutine ice_evp
     use schism_glbl,only: rkind,time_stamp,rnday,eta2,np,ne,nea, &
    &elnode,i34,dldxy,cori,grav,isbnd,indel,nne,area,iself,fdb,lfdb, &
-   &xnd,ynd,iplg,ielg,elside,mnei,rho0,idry,errmsg,npa
+   &xnd,ynd,iplg,ielg,elside,mnei,rho0,idry,errmsg,npa,xctr,yctr,zctr,pi,&
+   &pframe,eframe
     use schism_msgp, only: myrank,nproc,parallel_abort,exchange_p2d
     use mice_module
     use mice_therm_mod
@@ -15,10 +16,10 @@ subroutine ice_evp
    &pp0,delta,delta_inv,rr1,rr2,rr3,sig1,sig2,x10,x20,y10,y20,rl10, &
    &rl20,sintheta,bb1,bb2,h_ice_el,a_ice_el,h_snow_el,dsig_1,dsig_2,mass, &
    &cori_nd,umod,gam1,rx,ry,rxp,ryp,eps11,eps12,eps22, &
-   &zeta,delta_nd
+   &zeta,delta_nd,ar1,ar2,tmp3,tmp4
   
     integer :: iball(mnei),n
-    real(rkind) :: swild(2,3),swild2(nea),deta(2,nea),p_ice(3)
+    real(rkind) :: swild(2,3),swild2(nea),deta(2,nea),p_ice(3),utmp(3),vtmp(3)
   
     dtevp=dt_dyn/evp_rheol_steps
     t_evp_inv=3/dt_dyn !inverse of T
@@ -39,11 +40,32 @@ subroutine ice_evp
   !        sigma11(i)=0; sigma12(i)=0; sigma22(i)=0; delta_ice(i)=0
   !        cycle
   !      endif
-  
+        call compute_ll(xctr(i),yctr(i),zctr(i),ar1,ar2)
         eps11=dot_product(U_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),1,i)) !epsilon11=du_dx
         eps22=dot_product(V_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),2,i)) !epsilon22=dv_dy
         tmp1=dot_product(U_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),2,i)) !du_dy
         tmp2=dot_product(V_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),1,i)) !dv_dx
+        utmp = U_ice(elnode(1:i34(i),i))
+        vtmp = V_ice(elnode(1:i34(i),i))
+        do j=1,i34(i)
+
+          tmp1 = dot_product(eframe(1:3,1,i),pframe(1:3,1,elnode(j,i)))
+          tmp2 = dot_product(eframe(1:3,2,i),pframe(1:3,1,elnode(j,i)))
+          tmp3 = U_ice(elnode(j,i))
+          tmp4 = V_ice(elnode(j,i))
+          !utmp(j) = tmp3*tmp1+tmp2*tmp4
+          !vtmp(j) = tmp1*tmp4+tmp3*tmp2
+          !utmp(j) = tmp3*dot_product(pframe(1:3,1,elnode(j,i)),eframe(1:3,1,i))+tmp4*dot_product(pframe(1:3,2,elnode(j,i)),eframe(1:3,1,i))
+          !vtmp(j) = tmp3*dot_product(pframe(1:3,1,elnode(j,i)),eframe(1:3,2,i))+tmp4*dot_product(pframe(1:3,2,elnode(j,i)),eframe(1:3,2,i))
+          utmp(j) = tmp3*dot_product(pframe(1:3,1,elnode(j,i)),eframe(1:3,1,i))+tmp4*dot_product(pframe(1:3,2,elnode(j,i)),eframe(1:3,1,i))
+          vtmp(j) = tmp3*dot_product(pframe(1:3,1,elnode(j,i)),eframe(1:3,2,i))+tmp4*dot_product(pframe(1:3,2,elnode(j,i)),eframe(1:3,2,i))
+        enddo
+
+        eps11=dot_product(utmp,dldxy(1:i34(i),1,i)) !epsilon11=du_dx
+        eps22=dot_product(vtmp,dldxy(1:i34(i),2,i)) !epsilon22=dv_dy
+        tmp1=dot_product(utmp,dldxy(1:i34(i),2,i)) !du_dy
+        tmp2=dot_product(vtmp,dldxy(1:i34(i),1,i)) !dv_dx
+
         eps12=0.5*(tmp1+tmp2) !epsilon12
         !Deformation rate
         tmp1=eps11+eps22 !divergence
@@ -157,8 +179,10 @@ subroutine ice_evp
           h_ice_el=sum(m_ice0(elnode(1:3,ie)))/3.0
           h_snow_el=sum(m_snow0(elnode(1:3,ie)))/3.0
           tmp1=rhoice*h_ice_el+rhosno*h_snow_el !mass @elem
-          sum1=sum1+tmp1*deta(1,ie)*area(ie)/3
-          sum2=sum2+tmp1*deta(2,ie)*area(ie)/3
+          !sum1=sum1+tmp1*deta(1,ie)*area(ie)/3
+          !sum2=sum2+tmp1*deta(2,ie)*area(ie)/3
+          sum1=sum1+tmp1*deta(1,ie)*area(ie)/3*dot_product(eframe(1:3,1,ie),pframe(1:3,1,i))+tmp1*deta(2,ie)*area(ie)/3*dot_product(eframe(1:3,2,ie),pframe(1:3,1,i))
+          sum2=sum2+tmp1*deta(1,ie)*area(ie)/3*dot_product(eframe(1:3,1,ie),pframe(1:3,2,i))+tmp1*deta(2,ie)*area(ie)/3*dot_product(eframe(1:3,2,ie),pframe(1:3,2,i))
         enddo !j
         rxp=rxp-grav*sum1/mass/area_median(i)
         ryp=ryp-grav*sum2/mass/area_median(i)
@@ -167,8 +191,12 @@ subroutine ice_evp
         do j=1,nne(i)
           ie=indel(j,i)
           id=iself(j,i)
-          sum1=sum1+area(ie)*(dldxy(id,1,ie)*sigma11(ie)+dldxy(id,2,ie)*sigma12(ie))
-          sum2=sum2+area(ie)*(dldxy(id,1,ie)*sigma12(ie)+dldxy(id,2,ie)*sigma22(ie))
+          !sum1=sum1+area(ie)*(dldxy(id,1,ie)*sigma11(ie)+dldxy(id,2,ie)*sigma12(ie))
+          !sum2=sum2+area(ie)*(dldxy(id,1,ie)*sigma12(ie)+dldxy(id,2,ie)*sigma22(ie))
+          sum1=sum1+area(ie)*(dldxy(id,1,ie)*sigma11(ie)+dldxy(id,2,ie)*sigma12(ie))*dot_product(eframe(1:3,1,ie),pframe(1:3,1,i))+&
+          &area(ie)*(dldxy(id,1,ie)*sigma12(ie)+dldxy(id,2,ie)*sigma22(ie))*dot_product(eframe(1:3,2,ie),pframe(1:3,1,i))
+          sum2=sum2+area(ie)*(dldxy(id,1,ie)*sigma11(ie)+dldxy(id,2,ie)*sigma12(ie))*dot_product(eframe(1:3,1,ie),pframe(1:3,2,i))+&
+          &area(ie)*(dldxy(id,1,ie)*sigma12(ie)+dldxy(id,2,ie)*sigma22(ie))*dot_product(eframe(1:3,2,ie),pframe(1:3,2,i))
         enddo !j
         rxp=rxp-sum1/mass/area_median(i)
         ryp=ryp-sum2/mass/area_median(i)
