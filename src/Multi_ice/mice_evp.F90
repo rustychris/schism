@@ -40,17 +40,15 @@ subroutine ice_evp
   !        sigma11(i)=0; sigma12(i)=0; sigma22(i)=0; delta_ice(i)=0
   !        cycle
   !      endif
-        call compute_ll(xctr(i),yctr(i),zctr(i),ar1,ar2)
-        eps11=dot_product(U_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),1,i)) !epsilon11=du_dx
-        eps22=dot_product(V_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),2,i)) !epsilon22=dv_dy
-        tmp1=dot_product(U_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),2,i)) !du_dy
-        tmp2=dot_product(V_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),1,i)) !dv_dx
+
+        !eps11=dot_product(U_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),1,i)) !epsilon11=du_dx
+        !eps22=dot_product(V_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),2,i)) !epsilon22=dv_dy
+        !tmp1=dot_product(U_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),2,i)) !du_dy
+        !tmp2=dot_product(V_ice(elnode(1:i34(i),i)),dldxy(1:i34(i),1,i)) !dv_dx
         utmp = U_ice(elnode(1:i34(i),i))
         vtmp = V_ice(elnode(1:i34(i),i))
         do j=1,i34(i)
 
-          tmp1 = dot_product(eframe(1:3,1,i),pframe(1:3,1,elnode(j,i)))
-          tmp2 = dot_product(eframe(1:3,2,i),pframe(1:3,1,elnode(j,i)))
           tmp3 = U_ice(elnode(j,i))
           tmp4 = V_ice(elnode(j,i))
           !utmp(j) = tmp3*tmp1+tmp2*tmp4
