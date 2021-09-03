@@ -219,7 +219,7 @@
 
 !     Solver arrays for TRIDAG
       real(rkind) :: alow(max(4,nvrt)),bdia(max(4,nvrt)),cupp(max(4,nvrt)),rrhs(2,nvrt), &
-                    &soln(2,nvrt),gam(nvrt),gam2(nvrt),soln2(nvrt)
+                    &soln(2,nvrt),gam(nvrt),gam2(nvrt),soln2(nvrt),utmp0(3),vtmp0(3)
 
 !     Misc 
       integer :: nwild(nea+300),nwild2(ne_global)
@@ -3372,7 +3372,10 @@
                   call vinter(1,nvrt,1,zs(k,j),kbs(jsj),nvrt,k,zs(:,jsj),su2(:,jsj),swild(1),ibelow)
                   call vinter(1,nvrt,1,zs(k,j),kbs(jsj),nvrt,k,zs(:,jsj),sv2(:,jsj),swild(2),ibelow)
                 endif !isd/=i
-                swild10(i,1)=swild(1); swild10(i,2)=swild(2)
+                !swild10(i,1)=swild(1)
+                !swild10(i,2)=swild(2)
+                swild10(i,1)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,1,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,1,j))
+                swild10(i,2)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,2,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,2,j))
               enddo !i=1,i34(ie)
 
               !do i=1,2 !i34(ie) !2 sides per elem.
@@ -3462,7 +3465,9 @@
                     call vinter(1,nvrt,1,zs(k,j),kbs(jsj),nvrt,k,zs(:,jsj),gam2,swild(2),ibelow)
                     !call vinter(1,nvrt,1,zs(k,j),kbs(jsj),nvrt,k,zs(:,jsj),swild98(2,:,jsj),swild(2),ibelow)
                   endif !isd/=i
-                  swild10(i,1)=swild(1); swild10(i,2)=swild(2)
+                  !swild10(i,1)=swild(1); swild10(i,2)=swild(2)
+                  swild10(i,1)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,1,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,1,j))
+                  swild10(i,2)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,2,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,2,j))
  
 !                  !Project to side frame for ics=2
 !                  if(ics==1) then
@@ -3543,7 +3548,9 @@
                   call vinter(1,nvrt,1,zs(k,j),kbs(jsj),nvrt,k,zs(:,jsj),sv2(:,jsj),swild(2),ibelow)
                 endif !isd/=i
                 !in ll frame if ics=2
-                swild10(i,1)=swild(1); swild10(i,2)=swild(2)
+                !swild10(i,1)=swild(1); swild10(i,2)=swild(2)
+                swild10(i,1)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,1,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,1,j))
+                swild10(i,2)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,2,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,2,j))
               enddo !i=1,i34(ie)
 
               !Reconstruct local gradient
@@ -3856,10 +3863,18 @@
               icount=icount+1
 
               !not strictly along z; in ll frame for ics=2
-              dudx=dot_product(uu2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),1,ie))
-              dudy=dot_product(uu2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),2,ie))
-              dvdx=dot_product(vv2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),1,ie))
-              dvdy=dot_product(vv2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),2,ie))
+              do jj=1,i34(ie)
+                utmp0(j) = uu2(j,elnode(jj,ie))*dot_product(pframe(1:3,1,elnode(jj,ie)),eframe(1:3,1,ie))+vv2(j,elnode(jj,ie))*dot_product(pframe(1:3,2,elnode(jj,ie)),eframe(1:3,1,ie))
+                vtmp0(j) = uu2(j,elnode(jj,ie))*dot_product(pframe(1:3,1,elnode(jj,ie)),eframe(1:3,2,ie))+vv2(j,elnode(jj,ie))*dot_product(pframe(1:3,2,elnode(jj,ie)),eframe(1:3,2,ie))
+              enddo
+              dudx=dot_product(utmp0,dldxy(1:i34(ie),1,ie))
+              dudy=dot_product(utmp0,dldxy(1:i34(ie),2,ie))
+              dvdx=dot_product(vtmp0,dldxy(1:i34(ie),1,ie))
+              dvdy=dot_product(vtmp0,dldxy(1:i34(ie),2,ie))
+              !dudx=dot_product(uu2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),1,ie))
+              !dudy=dot_product(uu2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),2,ie))
+              !dvdx=dot_product(vv2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),1,ie))
+              !dvdy=dot_product(vv2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),2,ie))
               suma=suma+dt*sqrt(dudx**2.d0+dudy**2.d0+dvdx**2.d0+dvdy**2.d0)
             enddo !ii=1,2
             if(icount==0) then
@@ -4183,8 +4198,8 @@
                     id=elside(nxq(i34(ie)-1,ll,i34(ie)),ie)
                   endif
                   kin=max(k,kbs(id))
-                  suru=suru+swild96(1,kin,id)
-                  surv=surv+swild96(2,kin,id)
+                  suru=suru+swild96(1,kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,1,i))+swild96(2,kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,1,i))
+                  surv=surv+swild96(1,kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,2,i))+swild96(2,kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,2,i))
                 enddo !j
                 !swild97(1,k,i)=tsd(k,i)+0.125*(suru-2*swild96(1,k,i))
                 swild97(1,k,i)=sdbt(1,k,i)+0.125d0*(suru-2.d0*swild96(1,k,i))
@@ -4200,8 +4215,8 @@
                 do j=1,4
                   id=isidenei2(j,i)
                   kin=max(k,kbs(id))
-                  suru=suru+swild96(1,kin,id)
-                  surv=surv+swild96(2,kin,id)
+                  suru=suru+swild96(1,kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,1,i))+swild96(2,kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,1,i))
+                  surv=surv+swild96(1,kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,2,i))+swild96(2,kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,2,i))
                 enddo !j
                 !swild97(1,k,i)=tsd(k,i)+0.125*(suru-4*swild96(1,k,i))
                 swild97(1,k,i)=sdbt(1,k,i)+0.125d0*(suru-4.d0*swild96(1,k,i))
@@ -4411,8 +4426,8 @@
               call vinter(1,nvrt,1,znl(k,i),kbs(isd),nvrt,k,zs(:,isd),gam,swild(1),ibelow)
               gam(:)=sv2(:,isd)
               call vinter(1,nvrt,1,znl(k,i),kbs(isd),nvrt,k,zs(:,isd),gam,swild(2),ibelow)
-              swild10(m,1)=swild(1) !u@side @nodal level
-              swild10(m,2)=swild(2) !v
+              swild10(m,1)=swild(1)*dot_product(sframe2(1:3,1,isd),pframe(1:3,1,elnode(m,ie)))+swild(2)*dot_product(sframe2(1:3,2,isd),pframe(1:3,1,elnode(m,ie))) !u@side @nodal level
+              swild10(m,2)=swild(1)*dot_product(sframe2(1:3,1,isd),pframe(1:3,2,elnode(m,ie)))+swild(2)*dot_product(sframe2(1:3,2,isd),pframe(1:3,2,elnode(m,ie))) !v
             enddo !m
             utmp=sum(swild10(1:i34(ie),1))/real(i34(ie),rkind) !vel @ centroid
             vtmp=sum(swild10(1:i34(ie),2))/real(i34(ie),rkind) !vel @ centroid
@@ -4526,8 +4541,12 @@
         n1=isidenode(1,i); n2=isidenode(2,i)
         do k=kbs(i),nvrt
 !          if(isbs(i)==0) then !internal
-          sdbt(1,k,i)=su2(k,i)-dt*(bcc(1,k,n1)+bcc(1,k,n2))/2.d0-dt*swild2(k,1)
-          sdbt(2,k,i)=sv2(k,i)-dt*(bcc(2,k,n1)+bcc(2,k,n2))/2.d0-dt*swild2(k,2)
+          !sdbt(1,k,i)=su2(k,i)-dt*(bcc(1,k,n1)+bcc(1,k,n2))/2.d0-dt*swild2(k,1)
+          !sdbt(2,k,i)=sv2(k,i)-dt*(bcc(2,k,n1)+bcc(2,k,n2))/2.d0-dt*swild2(k,2)
+          sdbt(1,k,i)=su2(k,i)-dt*(bcc(1,k,n1)*dot_product(pframe(1:3,1,n1),sframe2(1:3,1,i))+bcc(2,k,n1)*dot_product(pframe(1:3,2,n1),sframe2(1:3,1,i))+&
+          &bcc(1,k,n2)*dot_product(pframe(1:3,1,n2),sframe2(1:3,1,i))+bcc(2,k,n2)*dot_product(pframe(1:3,2,n2),sframe2(1:3,1,i)))/2.d0-dt*swild2(k,1)
+          sdbt(2,k,i)=sv2(k,i)-dt*(bcc(1,k,n1)*dot_product(pframe(1:3,1,n1),sframe2(1:3,2,i))+bcc(2,k,n1)*dot_product(pframe(1:3,2,n1),sframe2(1:3,2,i))+&
+          &bcc(1,k,n2)*dot_product(pframe(1:3,1,n2),sframe2(1:3,2,i))+bcc(2,k,n2)*dot_product(pframe(1:3,2,n2),sframe2(1:3,2,i)))/2.d0-dt*swild2(k,2)
 !          else !bnd side; use ELM
             !Use elem average b/cos there is no viscosity
 !            ie=isdel(1,i)
@@ -4926,11 +4945,11 @@
               call vinter(1,nvrt,1,(zs(k,i)+zs(k-1,i))/2.d0,kbe(ie)+1,nvrt,k,gam,gam2,swild(1),ibelow)
               gam2(kbe(ie)+1:nvrt)=dr_dxy(2,kbe(ie)+1:nvrt,ie)
               call vinter(1,nvrt,1,(zs(k,i)+zs(k-1,i))/2.d0,kbe(ie)+1,nvrt,k,gam,gam2,swild(2),ibelow)
-!              if(ics==2) then !to sframe
-!                call project_hvec(swild(1),swild(2),eframe(:,:,ie),sframe(:,:,i),tmp1,tmp2)
-!                swild(1)=tmp1
-!                swild(2)=tmp2
-!              endif !ics
+              if(ics==2) then !to sframe
+                call project_hvec(swild(1),swild(2),eframe(:,:,ie),sframe2(:,:,i),tmp1,tmp2)
+                swild(1)=tmp1
+                swild(2)=tmp2
+              endif !ics
               swild2(k,1:2)=swild2(k,1:2)+swild(1:2)
             enddo !j
             if(icount==0) call parallel_abort('MAIN: impossible 101')
@@ -5012,6 +5031,14 @@
           nd=elnode(j,i)
 !         idry_e(i) checked already
           !Node - const in elem
+          !detadx=detadx+eta2(nd)*dldxy(j,1,i)*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+eta2(nd)*dldxy(j,2,i)*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd)) !in eframe if ics=2
+          !detady=detady+eta2(nd)*dldxy(j,1,i)*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+eta2(nd)*dldxy(j,2,i)*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd)) !eframe to sframe2, consistent with botf
+          !dprdx=dprdx+pr(nd)*dldxy(j,1,i)*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+pr(nd)*dldxy(j,2,i)*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd))
+          !dprdy=dprdy+pr(nd)*dldxy(j,1,i)*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+pr(nd)*dldxy(j,2,i)*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd))
+          !if(dpe(i)>=tip_dp) then
+          !  detpdx=detpdx+etp(nd)*dldxy(j,1,i)*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+etp(nd)*dldxy(j,2,i)*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd))
+          !  detpdy=detpdy+etp(nd)*dldxy(j,1,i)*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+etp(nd)*dldxy(j,2,i)*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd))
+          !endif
           detadx=detadx+eta2(nd)*dldxy(j,1,i) !in eframe if ics=2
           detady=detady+eta2(nd)*dldxy(j,2,i)
           dprdx=dprdx+pr(nd)*dldxy(j,1,i)
@@ -5074,16 +5101,26 @@
               endif
             endif !2/3D
           enddo !k
-          ghat1(1,i)=ghat1(1,i)+cff1*tmp1-cff3*xtmp
-          ghat1(2,i)=ghat1(2,i)+cff1*tmp2-cff3*ytmp
+          ghat1(1,i)=ghat1(1,i)+cff1*(tmp1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+tmp2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
+          &cff3*(xtmp*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+ytmp*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
+          ghat1(2,i)=ghat1(2,i)+cff1*(tmp1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+tmp2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
+          &cff3*(xtmp*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+ytmp*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
 
           !For tau, pframe and eframe are approx. the same
-          tau_x=sum(tau(1,isidenode(1:2,isd)))/2.d0
-          tau_y=sum(tau(2,isidenode(1:2,isd)))/2.d0
+          !tau_x=sum(tau(1,isidenode(1:2,isd)))/2.d0
+          !tau_y=sum(tau(2,isidenode(1:2,isd)))/2.d0
+          tau_x=(tau(1,isidenode(1,isd))*dot_product(pframe(1:3,1,isidenode(1,isd)),sframe2(1:3,1,isd))+tau(2,isidenode(1,isd))*dot_product(pframe(1:3,2,isidenode(1,isd)),sframe2(1:3,1,isd))+&
+          &tau(1,isidenode(2,isd))*dot_product(pframe(1:3,1,isidenode(2,isd)),sframe2(1:3,1,isd))+tau(2,isidenode(2,isd))*dot_product(pframe(1:3,2,isidenode(2,isd)),sframe2(1:3,1,isd)))/2.d0
+          tau_y=(tau(1,isidenode(1,isd))*dot_product(pframe(1:3,1,isidenode(1,isd)),sframe2(1:3,2,isd))+tau(2,isidenode(1,isd))*dot_product(pframe(1:3,2,isidenode(1,isd)),sframe2(1:3,2,isd))+&
+          &tau(1,isidenode(2,isd))*dot_product(pframe(1:3,1,isidenode(2,isd)),sframe2(1:3,2,isd))+tau(2,isidenode(2,isd))*dot_product(pframe(1:3,2,isidenode(2,isd)),sframe2(1:3,2,isd)))/2.d0
           ubstar=sdbt(1,kbs(isd)+1,isd)
           vbstar=sdbt(2,kbs(isd)+1,isd)
-          ghat1(1,i)=ghat1(1,i)-chi(isd)*dt*cff2*ubstar+dt*cff1*tau_x
-          ghat1(2,i)=ghat1(2,i)-chi(isd)*dt*cff2*vbstar+dt*cff1*tau_y
+          !ghat1(1,i)=ghat1(1,i)-chi(isd)*dt*cff2*ubstar+dt*cff1*tau_x
+          !ghat1(2,i)=ghat1(2,i)-chi(isd)*dt*cff2*vbstar+dt*cff1*tau_y
+          ghat1(1,i)=ghat1(1,i)-chi(isd)*dt*cff2*(ubstar*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+vbstar*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))+&
+          &dt*cff1*(tau_x*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+tau_y*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
+          ghat1(2,i)=ghat1(2,i)-chi(isd)*dt*cff2*(ubstar*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+vbstar*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))+&
+          &dt*cff1*(tau_x*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+tau_y*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
 
           !All terms in F,F^\alpha,f_b except baroclinic
           !Only need to calculate F^\alpha for 3D sides (but init=0) 
@@ -5161,8 +5198,15 @@
           botf1=botf1+swild10(kbs(isd)+1,1)
           botf2=botf2+swild10(kbs(isd)+1,2)
 
-          ghat1(1,i)=ghat1(1,i)+cff1*dt*bigf1-cff2*chi(isd)*dt*dt*botf1-cff3*dt*bigfa1
-          ghat1(2,i)=ghat1(2,i)+cff1*dt*bigf2-cff2*chi(isd)*dt*dt*botf2-cff3*dt*bigfa2
+          !ghat1(1,i)=ghat1(1,i)+cff1*dt*bigf1-cff2*chi(isd)*dt*dt*botf1-cff3*dt*bigfa1
+          !ghat1(2,i)=ghat1(2,i)+cff1*dt*bigf2-cff2*chi(isd)*dt*dt*botf2-cff3*dt*bigfa2
+
+          ghat1(1,i)=ghat1(1,i)+cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
+          &cff2*chi(isd)*dt*dt*(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
+          &cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
+          ghat1(2,i)=ghat1(2,i)+cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
+          &cff2*chi(isd)*dt*dt*(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
+          &cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
         enddo !j: nodes and sides
         ghat1(1,i)=ghat1(1,i)/real(i34(i),rkind)
         ghat1(2,i)=ghat1(2,i)/real(i34(i),rkind)
@@ -5171,17 +5215,27 @@
         grav3=sum(grav2(elnode(1:i34(i),i)))/dble(i34(i))
         botf1=grav3*detpdx-dprdx/rho0 !const in each elem
         botf2=grav3*detpdy-dprdy/rho0
+        !botf1=grav3*(detpdx*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+detpdy*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd)))-&
+        !&(dprdx*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+dprdy*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd)))/rho0 !const in each elem
+        !botf2=grav3*(detpdx*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+detpdy*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd)))-&
+        !&(dprdx*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+dprdy*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd)))/rho0
         tmp1=0.d0; tmp2=0.d0 !elem average of all terms; into ghat1
         do j=1,i34(i) !side
           isd=elside(j,i)
           htot=dps(isd)+sum(eta2(isidenode(1:2,isd)))/2.d0
           sav_h_sd=sum(sav_h(isidenode(1:2,isd)))/2.d0
-          bigf1=htot*botf1 
-          bigf2=htot*botf2 
-          bigfa1=min(htot,sav_h_sd)*botf1
-          bigfa2=min(htot,sav_h_sd)*botf2
-          tmp1=tmp1+av_cff1*dt*bigf1-av_cff2*chi(isd)*dt*dt*botf1-av_cff3*dt*bigfa1
-          tmp2=tmp2+av_cff1*dt*bigf2-av_cff2*chi(isd)*dt*dt*botf2-av_cff3*dt*bigfa2
+          bigf1=htot*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd))) 
+          bigf2=htot*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd))) 
+          bigfa1=min(htot,sav_h_sd)*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd))) 
+          bigfa2=min(htot,sav_h_sd)*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd))) 
+          !tmp1=tmp1+av_cff1*dt*bigf1-av_cff2*chi(isd)*dt*dt*botf1-av_cff3*dt*bigfa1
+          !tmp2=tmp2+av_cff1*dt*bigf2-av_cff2*chi(isd)*dt*dt*botf2-av_cff3*dt*bigfa2
+          tmp1=tmp1+av_cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
+          &av_cff2*chi(isd)*dt*dt*botf1-&!(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
+          &av_cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
+          tmp2=tmp2+av_cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
+          &av_cff2*chi(isd)*dt*dt*botf2-&!(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
+          &av_cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
         enddo !j
         ghat1(1,i)=ghat1(1,i)+tmp1/real(i34(i),rkind)
         ghat1(2,i)=ghat1(2,i)+tmp2/real(i34(i),rkind)
@@ -5342,7 +5396,9 @@
 !	  I_4
           do m=1,i34(ie)
             isd=elside(m,ie)
-            swild2(1:2,m)=bigu(1:2,isd)   
+            !swild2(1:2,m)=bigu(1:2,isd) 
+            swild2(1,m)=bigu(1,isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,ie))+bigu(2,isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,ie))
+            swild2(2,m)=bigu(1,isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,ie))+bigu(2,isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,ie))
           enddo !m
           dot1=dldxy(id,1,ie)*sum(swild2(1,1:i34(ie)))/real(i34(ie),rkind)+ &
      &dldxy(id,2,ie)*sum(swild2(2,1:i34(ie)))/real(i34(ie),rkind)
@@ -5389,6 +5445,8 @@
               detadx=dot_product(eta2(elnode(1:3,ie)),dldxy(1:3,1,ie))
               detady=dot_product(eta2(elnode(1:3,ie)),dldxy(1:3,2,ie))
               tmp=dldxy(id,1,ie)*detadx+dldxy(id,2,ie)*detady
+              !tmp=dldxy(id,1,ie)*(detadx*dot_product(eframe(1:3,1,ie),pframe(1:3,1,i))+detady*dot_product(eframe(1:3,2,ie),pframe(1:3,1,i)))+&
+              !&dldxy(id,2,ie)*(detadx*dot_product(eframe(1:3,1,ie),pframe(1:3,2,i))+detady*dot_product(eframe(1:3,2,ie),pframe(1:3,2,i)))
               qel(i)=qel(i)-area(ie)*grav3*dt*dt*thetai*(1.d0-thetai)*hhatb*tmp
             endif !idry
 
@@ -5788,8 +5846,10 @@
               do m=1,i34(ie)
                 tmpx=eta2(elnode(m,ie))*dldxy(m,1,ie) !eframe if ics=2
                 tmpy=eta2(elnode(m,ie))*dldxy(m,2,ie)
-                deta2_dx(j)=deta2_dx(j)+tmpx !ll if ics=2
-                deta2_dy(j)=deta2_dy(j)+tmpy
+                !deta2_dx(j)=deta2_dx(j)+tmpx !ll if ics=2
+                !deta2_dy(j)=deta2_dy(j)+tmpy
+                deta2_dx(j)=deta2_dx(j)+tmpx*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) !ll if ics=2
+                deta2_dy(j)=deta2_dy(j)+tmpx*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
               enddo !m
             endif !wet at n+1
             if(idry_e(ie)==0) then
@@ -5804,13 +5864,21 @@
                 tmpx3=etp(nd)*dldxy(m,1,ie)
                 tmpy3=etp(nd)*dldxy(m,2,ie)
             
-                deta1_dx(j)=deta1_dx(j)+tmpx1 
-                deta1_dy(j)=deta1_dy(j)+tmpy1
-                dpr_dx(j)=dpr_dx(j)+tmpx2
-                dpr_dy(j)=dpr_dy(j)+tmpy2
+                !deta1_dx(j)=deta1_dx(j)+tmpx1 
+                !deta1_dy(j)=deta1_dy(j)+tmpy1
+                !dpr_dx(j)=dpr_dx(j)+tmpx2
+                !dpr_dy(j)=dpr_dy(j)+tmpy2
+                !if(dpe(ie)>=tip_dp) then
+                !  detp_dx(j)=detp_dx(j)+tmpx3
+                !  detp_dy(j)=detp_dy(j)+tmpy3
+                !endif
+                deta1_dx(j)=deta1_dx(j)+tmpx1*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy1*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) 
+                deta1_dy(j)=deta1_dy(j)+tmpx1*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy1*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
+                dpr_dx(j)=dpr_dx(j)+tmpx2*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy2*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) 
+                dpr_dy(j)=dpr_dy(j)+tmpx2*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy2*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
                 if(dpe(ie)>=tip_dp) then
-                  detp_dx(j)=detp_dx(j)+tmpx3
-                  detp_dy(j)=detp_dy(j)+tmpy3
+                  detp_dx(j)=detp_dx(j)+tmpx3*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy3*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) 
+                  detp_dy(j)=detp_dy(j)+tmpx3*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy3*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
                 endif
               enddo !m
             endif
@@ -5911,8 +5979,12 @@
             call parallel_abort(errmsg)
           endif
 !          del=hhat(j)*hhat(j)+(theta2*cori(j)*dt*htot)**2 !delta > 0
-          taux2=(tau(1,node1)+tau(1,node2))/2.d0
-          tauy2=(tau(2,node1)+tau(2,node2))/2.d0
+          !taux2=(tau(1,node1)+tau(1,node2))/2.d0
+          !tauy2=(tau(2,node1)+tau(2,node2))/2.d0
+          taux2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,1,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,1,j))+&
+          &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,1,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,1,j)))/2.d0
+          tauy2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,2,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,2,j))+&
+          &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,2,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,2,j)))/2.d0
 
           !hat_gam_[xy] has a dimension of m/s
           !hat_gam_x=sdbt(1,nvrt,j)+dt*(cori(j)*sv2(nvrt,j)-dpr_dx(j)/rho0+0.69d0*grav3*detp_dx(j)+ &
@@ -6030,8 +6102,12 @@
             endif
 !-----------------------------
           else !k=nvrt
-            taux2=(tau(1,node1)+tau(1,node2))/2.d0
-            tauy2=(tau(2,node1)+tau(2,node2))/2.d0
+            !taux2=(tau(1,node1)+tau(1,node2))/2.d0
+            !tauy2=(tau(2,node1)+tau(2,node2))/2.d0
+            taux2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,1,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,1,j))+&
+            &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,1,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,1,j)))/2.d0
+            tauy2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,2,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,2,j))+&
+            &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,2,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,2,j)))/2.d0
             rrhs(1,kin)=rrhs(1,kin)+dt*taux2
             rrhs(2,kin)=rrhs(2,kin)+dt*tauy2
           endif !k
@@ -6243,8 +6319,10 @@
                 else
                   kin=max(k,kbs(id)+1)
                 endif
-                suru=suru+su2(kin,id) !utmp
-                surv=surv+sv2(kin,id) !vtmp
+                !suru=suru+su2(kin,id) !utmp
+                !surv=surv+sv2(kin,id) !vtmp
+                suru=suru+su2(kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,1,i))+sv2(kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,1,i)) !utmp
+                surv=surv+su2(kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,2,i))+sv2(kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,2,i)) !vtmp
               enddo !j
 
               bcc(1,k,i)=su2(k,i)+shapiro(i)/4.d0*(suru-4.d0*su2(k,i)) !new37: lon/lat frame if ics=2
@@ -6446,8 +6524,8 @@
         ubar=0.d0; vbar=0.d0 !average bottom hvel
         do m=1,i34(i) !side
           isd=elside(m,i)
-          ubar=ubar+su2(kbs(isd),isd)*i34inv !swild98(1,m,kbs(isd))/i34(i)
-          vbar=vbar+sv2(kbs(isd),isd)*i34inv !swild98(2,m,kbs(isd))/i34(i)
+          ubar=ubar+(su2(kbs(isd),isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+sv2(kbs(isd),isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))*i34inv !swild98(1,m,kbs(isd))/i34(i)
+          vbar=vbar+(su2(kbs(isd),isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+sv2(kbs(isd),isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))*i34inv !swild98(2,m,kbs(isd))/i34(i)
         enddo !m
 
 !       Bottom b.c.
@@ -6476,10 +6554,10 @@
             sum1=sum1+ssign(j,i)*(zs(max(l+1,kbs(jsj)),jsj)-zs(max(l,kbs(jsj)),jsj))*distj(jsj)*(vnor1+vnor2)/2.d0
 
             !In eframe
-            ubar=ubar+su2(l,jsj)*i34inv !swild98(1,j,l)/i34(i) !su2(l,jsj)/3    
-            ubar1=ubar1+su2(l+1,jsj)*i34inv !swild98(1,j,l+1)/i34(i) !su2(l+1,jsj)/3    
-            vbar=vbar+sv2(l,jsj)*i34inv !swild98(2,j,l)/i34(i) !sv2(l,jsj)/3    
-            vbar1=vbar1+sv2(l+1,jsj)*i34inv !swild98(2,j,l+1)/i34(i) !sv2(l+1,jsj)/3    
+            ubar=ubar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,1,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,1,i)))*i34inv !swild98(1,j,l)/i34(i) !su2(l,jsj)/3    
+            ubar1=ubar1+(su2(l+1,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,1,i))+sv2(l+1,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,1,i)))*i34inv !swild98(1,j,l+1)/i34(i) !su2(l+1,jsj)/3    
+            vbar=vbar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,2,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,2,i)))*i34inv  !swild98(2,j,l)/i34(i) !sv2(l,jsj)/3    
+            vbar1=vbar1+(su2(l+1,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,2,i))+sv2(l+1,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,2,i)))*i34inv !swild98(2,j,l+1)/i34(i) !sv2(l+1,jsj)/3    
           enddo !j
 
 !         Impose bottom no-flux b.c.
@@ -6531,8 +6609,8 @@
           vbar=0.d0
           do j=1,i34(i)
             jsj=elside(j,i)
-            ubar=ubar+su2(l,jsj)*i34inv 
-            vbar=vbar+sv2(l,jsj)*i34inv  
+            ubar=ubar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,1,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,1,i)))*i34inv 
+            vbar=vbar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,2,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,2,i)))*i34inv
           enddo !j
           wflux_correct=(ubar*sne(1,l)+vbar*sne(2,l)+we(l,i)*sne(3,l))*surface_flux_ratio*area_e(l) !fraction of surface flux
 

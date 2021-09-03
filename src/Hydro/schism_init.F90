@@ -1830,7 +1830,7 @@
                             &pframe(1,2,i),pframe(2,2,i),pframe(3,2,i), &
                             &pframe(1,3,i),pframe(2,3,i),pframe(3,3,i))
                             
-          if(ylat(i)*180/pi>80) write(12,*) i,xlon(i)*180/pi,ylat(i)*180/pi,pframe(1:3,1,i),pframe(1:3,2,i)
+          !if(ylat(i)*180/pi>80) write(12,*) i,xlon(i)*180/pi,ylat(i)*180/pi,pframe(1:3,1,i),pframe(1:3,2,i)
           
         enddo !i=1,npa
 !$OMP   end do
