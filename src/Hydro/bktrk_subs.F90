@@ -1020,13 +1020,15 @@ end subroutine inter_btrack
               uvdata(i,2)=0._rkind
               uvdata(i,3)=0._rkind
             else !wet
+!new37
               if(ics==1) then
-              vxl(1,1)=uu2(jlev,nd); vxl(1,2)=uu2(jlev-1,nd)
-              vxl(2,1)=vv2(jlev,nd); vxl(2,2)=vv2(jlev-1,nd)
+                vxl(1,1)=uu2(jlev,nd); vxl(1,2)=uu2(jlev-1,nd)
+                vxl(2,1)=vv2(jlev,nd); vxl(2,2)=vv2(jlev-1,nd)
               else
                 call project_hvec(uu2(jlev,nd),vv2(jlev,nd),pframe(:,:,nd),eframe(:,:,nnel),vxl(1,1),vxl(2,1))
                 call project_hvec(uu2(jlev-1,nd),vv2(jlev-1,nd),pframe(:,:,nd),eframe(:,:,nnel),vxl(1,2),vxl(2,2))
               endif !ics
+!end new37
               uvdata(i,1)=vxl(1,1)*(1._rkind-zrat)+vxl(1,2)*zrat
               uvdata(i,2)=vxl(2,1)*(1._rkind-zrat)+vxl(2,2)*zrat
               !For ibtrack_test only
@@ -1071,11 +1073,13 @@ end subroutine inter_btrack
           enddo !i
 
 !          !Proj vel. back to frame0
+!new37
           if(ics==2) then
             call project_hvec(uuint,vvint,eframe(:,:,nnel),frame0,uuint1,vvint1)
             uuint=uuint1
             vvint=vvint1
           endif !ics
+!end new37
         endif !resident element
       endif !Kriging
 
@@ -1678,15 +1682,17 @@ end subroutine inter_btrack
         do j=1,3 !sides and nodes
           nd=elnode(j,nnel)
           isd=elside(j,nnel)
+!new37
           if(ics==1) then
-          vxn(j)=su2(jlev,isd)*(1._rkind-zrat)+su2(jlev-1,isd)*zrat
-          vyn(j)=sv2(jlev,isd)*(1._rkind-zrat)+sv2(jlev-1,isd)*zrat !side
+            vxn(j)=su2(jlev,isd)*(1._rkind-zrat)+su2(jlev-1,isd)*zrat
+            vyn(j)=sv2(jlev,isd)*(1._rkind-zrat)+sv2(jlev-1,isd)*zrat !side
           else !lat/lon
             call project_hvec(su2(jlev,isd),sv2(jlev,isd),sframe2(:,:,isd),frame0,uj,vj)
             call project_hvec(su2(jlev-1,isd),sv2(jlev-1,isd),sframe2(:,:,isd),frame0,uj1,vj1)
             vxn(j)=uj*(1-zrat)+uj1*zrat
             vyn(j)=vj*(1-zrat)+vj1*zrat
           endif !ics
+!end new37
           vzn(j)=ww2(jlev,nd)*(1._rkind-zrat)+ww2(jlev-1,nd)*zrat !node
         enddo !j=1,3
 
@@ -1701,6 +1707,7 @@ end subroutine inter_btrack
           nd=elnode(j,nnel)
           do l=1,2 !levels
             lev=jlev+l-2
+!new37
             if(ics==1) then
               uu=uu2(lev,nd); vv=vv2(lev,nd)
             else !lat/lon
@@ -1708,6 +1715,7 @@ end subroutine inter_btrack
             endif !ics
             vxl(j,l)=uu !uu2(lev,nd) !uu !+vis_coe*uf
             vyl(j,l)=vv !vv2(lev,nd) !vv !+vis_coe*vf
+!end new37
             vzl(j,l)=ww2(lev,nd)
           enddo !l
         enddo !j

@@ -2260,9 +2260,10 @@
           !Save side vel.
           do j=1,i34(i) !side index
             isd=elside(j,i)
+!new37
             if(ics==1) then
-            swild5(j,1)=su2(k,isd)
-            swild5(j,2)=sv2(k,isd)
+              swild5(j,1)=su2(k,isd)
+              swild5(j,2)=sv2(k,isd)
             else !lat/lon
               !Element frame
               swild5(j,1)=su2(k,isd)*dot_product(sframe2(:,1,isd),eframe(:,1,i))+ &
@@ -2271,6 +2272,7 @@
               swild5(j,2)=su2(k,isd)*dot_product(sframe2(:,1,isd),eframe(:,2,i))+ &
                          &sv2(k,isd)*dot_product(sframe2(:,2,isd),eframe(:,2,i))
             endif !ics
+!end new37
           enddo !j
   
           if(i34(i)==3) then !Triangles
@@ -2327,9 +2329,10 @@
             if(idry_e(ie)==0) then
               icount=icount+1
 
+!new37
               if(ics==1) then
-              uu2(k,i)=uu2(k,i)+ufg(id,k,ie)
-              vv2(k,i)=vv2(k,i)+vfg(id,k,ie)
+                uu2(k,i)=uu2(k,i)+ufg(id,k,ie)
+                vv2(k,i)=vv2(k,i)+vfg(id,k,ie)
               else !lat/lon
                 !To node frame
                 uu2(k,i)=uu2(k,i)+ufg(id,k,ie)*dot_product(eframe(:,1,ie),pframe(:,1,i))+ &
@@ -2337,6 +2340,7 @@
                 vv2(k,i)=vv2(k,i)+ufg(id,k,ie)*dot_product(eframe(:,1,ie),pframe(:,2,i))+ &
                                  &vfg(id,k,ie)*dot_product(eframe(:,2,ie),pframe(:,2,i)) 
               endif !ics
+!end new37
             endif !idry_e
 
             !Vertical direction same between element and node frames
