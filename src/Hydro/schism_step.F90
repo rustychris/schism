@@ -219,7 +219,8 @@
 
 !     Solver arrays for TRIDAG
       real(rkind) :: alow(max(4,nvrt)),bdia(max(4,nvrt)),cupp(max(4,nvrt)),rrhs(2,nvrt), &
-                    &soln(2,nvrt),gam(nvrt),gam2(nvrt),soln2(nvrt),utmp0(3),vtmp0(3)
+!new37: add ,utmp0(4),vtmp0(4)
+                    &soln(2,nvrt),gam(nvrt),gam2(nvrt),soln2(nvrt),utmp0(4),vtmp0(4)
 
 !     Misc 
       integer :: nwild(nea+300),nwild2(ne_global)
@@ -3373,10 +3374,14 @@
                   call vinter(1,nvrt,1,zs(k,j),kbs(jsj),nvrt,k,zs(:,jsj),sv2(:,jsj),swild(2),ibelow)
                 endif !isd/=i
 !new37
-                !swild10(i,1)=swild(1)
-                !swild10(i,2)=swild(2)
-                swild10(i,1)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,1,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,1,j))
-                swild10(i,2)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,2,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,2,j))
+                if(ics==1) then
+                  swild10(i,1)=swild(1)
+                  swild10(i,2)=swild(2)
+                else
+                  call project_hvec(swild(1),swild(2),sframe2(:,:,jsj),sframe2(:,:,j),swild10(i,1),swild10(i,2))
+!                  swild10(i,1)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,1,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,1,j))
+!                  swild10(i,2)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,2,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,2,j))
+                endif
 !end new37
               enddo !i=1,i34(ie)
 
@@ -3467,9 +3472,16 @@
                     call vinter(1,nvrt,1,zs(k,j),kbs(jsj),nvrt,k,zs(:,jsj),gam2,swild(2),ibelow)
                     !call vinter(1,nvrt,1,zs(k,j),kbs(jsj),nvrt,k,zs(:,jsj),swild98(2,:,jsj),swild(2),ibelow)
                   endif !isd/=i
-                  !swild10(i,1)=swild(1); swild10(i,2)=swild(2)
-                  swild10(i,1)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,1,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,1,j))
-                  swild10(i,2)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,2,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,2,j))
+
+!new37
+                  if(ics==1) then
+                    swild10(i,1)=swild(1); swild10(i,2)=swild(2)
+                  else
+                    call project_hvec(swild(1),swild(2),sframe2(:,:,jsj),sframe2(:,:,j),swild10(i,1),swild10(i,2))
+!                    swild10(i,1)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,1,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,1,j))
+!                    swild10(i,2)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,2,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,2,j))
+                  endif
+!End new37
  
 !                  !Project to side frame for ics=2
 !                  if(ics==1) then
@@ -3551,9 +3563,13 @@
                 endif !isd/=i
                 !in ll frame if ics=2
 !new37
-                !swild10(i,1)=swild(1); swild10(i,2)=swild(2)
-                swild10(i,1)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,1,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,1,j))
-                swild10(i,2)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,2,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,2,j))
+                if(ics==1) then
+                  swild10(i,1)=swild(1); swild10(i,2)=swild(2)
+                else
+                  call project_hvec(swild(1),swild(2),sframe2(:,:,jsj),sframe2(:,:,j),swild10(i,1),swild10(i,2))
+!                  swild10(i,1)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,1,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,1,j))
+!                  swild10(i,2)=swild(1)*dot_product(sframe2(1:3,1,jsj),sframe2(1:3,2,j))+swild(2)*dot_product(sframe2(1:3,2,jsj),sframe2(1:3,2,j))
+                endif
 !end new37
               enddo !i=1,i34(ie)
 
@@ -3759,10 +3775,11 @@
       ndelt_max=max(1.d0,dt/dtb_min)
       ndelt_min=max(1.d0,dt/dtb_max) 
 
+!new37: add a few shared vars near the end
 !$OMP parallel default(private) shared(ns,sdbt,su2,sv2,uu2,vv2,ww2,idry_s,kbs,isdel, &
 !$OMP idry_e,iplg,isidenode,xcj,ycj,zcj,pframe,nvrt,islg,iadv,ics,xctr,yctr,zctr,zs,isbs,velmin_btrack, &
 !$OMP swild98,ibtrack_test,tsd,dt,dtb_min,dtb_max,ndelt_min,ndelt_max,elnode,i34,dldxy,btrack_nudge, &
-!$OMP xnd,ynd,l,nbtrk,mxnbt,btlist,myrank,ielg &
+!$OMP xnd,ynd,l,nbtrk,mxnbt,btlist,myrank,ielg,sframe2,eframe &
 !$OMP ) 
 
 !$OMP workshare
@@ -3869,13 +3886,19 @@
               !not strictly along z; in ll frame for ics=2
 !new37
               do jj=1,i34(ie)
-                utmp0(j) = uu2(j,elnode(jj,ie))*dot_product(pframe(1:3,1,elnode(jj,ie)),eframe(1:3,1,ie))+vv2(j,elnode(jj,ie))*dot_product(pframe(1:3,2,elnode(jj,ie)),eframe(1:3,1,ie))
-                vtmp0(j) = uu2(j,elnode(jj,ie))*dot_product(pframe(1:3,1,elnode(jj,ie)),eframe(1:3,2,ie))+vv2(j,elnode(jj,ie))*dot_product(pframe(1:3,2,elnode(jj,ie)),eframe(1:3,2,ie))
-              enddo
-              dudx=dot_product(utmp0,dldxy(1:i34(ie),1,ie))
-              dudy=dot_product(utmp0,dldxy(1:i34(ie),2,ie))
-              dvdx=dot_product(vtmp0,dldxy(1:i34(ie),1,ie))
-              dvdy=dot_product(vtmp0,dldxy(1:i34(ie),2,ie))
+                nd0=elnode(jj,ie)
+                if(ics==1) then
+                  utmp0(jj)=uu2(j,nd0); vtmp0(jj)=vv2(j,nd0)
+                else
+                  call project_hvec(uu2(j,nd0),vv2(j,nd0),pframe(:,:,nd0),eframe(:,:,ie),utmp0(jj),vtmp0(jj))
+!                  utmp0(jj) = uu2(j,nd0)*dot_product(pframe(1:3,1,nd0),eframe(1:3,1,ie))+vv2(j,nd0)*dot_product(pframe(1:3,2,nd0),eframe(1:3,1,ie))
+!                  vtmp0(jj) = uu2(j,nd0)*dot_product(pframe(1:3,1,nd0),eframe(1:3,2,ie))+vv2(j,nd0)*dot_product(pframe(1:3,2,nd0),eframe(1:3,2,ie))
+                endif !ics
+              enddo !jj
+              dudx=dot_product(utmp0(1:i34(ie)),dldxy(1:i34(ie),1,ie))
+              dudy=dot_product(utmp0(1:i34(ie)),dldxy(1:i34(ie),2,ie))
+              dvdx=dot_product(vtmp0(1:i34(ie)),dldxy(1:i34(ie),1,ie))
+              dvdy=dot_product(vtmp0(1:i34(ie)),dldxy(1:i34(ie),2,ie))
               !dudx=dot_product(uu2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),1,ie))
               !dudy=dot_product(uu2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),2,ie))
               !dvdx=dot_product(vv2(j,elnode(1:i34(ie),ie)),dldxy(1:i34(ie),1,ie))
@@ -4156,7 +4179,8 @@
         allocate(swild96(2,nvrt,nsa),swild97(2,nvrt,nsa),stat=istat)
         if(istat/=0) call parallel_abort('MAIN: fail to allocate swild96 (2.2)')
 
-!$OMP parallel default(shared) private(iter,i,ie,k,suru,surv,ll,j,id,kin)
+!new37: add private vars
+!$OMP parallel default(shared) private(iter,i,ie,k,suru,surv,ll,j,id,kin,tt1,ss1)
         do iter=1,15 !100
           !Calc epsilon
 !$OMP     workshare
@@ -4205,8 +4229,14 @@
                   endif
                   kin=max(k,kbs(id))
 !new37
-                  suru=suru+swild96(1,kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,1,i))+swild96(2,kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,1,i))
-                  surv=surv+swild96(1,kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,2,i))+swild96(2,kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,2,i))
+                  if(ics==1) then
+                    suru=suru+swild96(1,kin,id)
+                    surv=surv+swild96(2,kin,id)
+                  else
+                    call project_hvec(swild96(1,kin,id),swild96(2,kin,id),sframe2(:,:,id),sframe2(:,:,i),tt1,ss1)
+                    suru=suru+tt1 !swild96(1,kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,1,i))+swild96(2,kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,1,i))
+                    surv=surv+ss1 !swild96(1,kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,2,i))+swild96(2,kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,2,i))
+                  endif !ics
 !end new37
                 enddo !j
                 !swild97(1,k,i)=tsd(k,i)+0.125*(suru-2*swild96(1,k,i))
@@ -4435,8 +4465,14 @@
               gam(:)=sv2(:,isd)
               call vinter(1,nvrt,1,znl(k,i),kbs(isd),nvrt,k,zs(:,isd),gam,swild(2),ibelow)
 !new37
-              swild10(m,1)=swild(1)*dot_product(sframe2(1:3,1,isd),pframe(1:3,1,elnode(m,ie)))+swild(2)*dot_product(sframe2(1:3,2,isd),pframe(1:3,1,elnode(m,ie))) !u@side @nodal level
-              swild10(m,2)=swild(1)*dot_product(sframe2(1:3,1,isd),pframe(1:3,2,elnode(m,ie)))+swild(2)*dot_product(sframe2(1:3,2,isd),pframe(1:3,2,elnode(m,ie))) !v
+              if(ics==1) then
+                swild10(m,1)=swild(1) !u@side @nodal level
+                swild10(m,2)=swild(2) !v
+              else
+                call project_hvec(swild(1),swild(2),sframe2(:,:,isd),pframe(:,:,i),swild10(m,1),swild10(m,2))
+!                swild10(m,1)=swild(1)*dot_product(sframe2(1:3,1,isd),pframe(1:3,1,i))+swild(2)*dot_product(sframe2(1:3,2,isd),pframe(1:3,1,i)) !u@side @nodal level
+!                swild10(m,2)=swild(1)*dot_product(sframe2(1:3,1,isd),pframe(1:3,2,i))+swild(2)*dot_product(sframe2(1:3,2,isd),pframe(1:3,2,i)) !v
+              endif !ics
 !end new37
             enddo !m
             utmp=sum(swild10(1:i34(ie),1))/real(i34(ie),rkind) !vel @ centroid
@@ -4513,7 +4549,8 @@
 #endif
 
       !Vertical advection part
-!$OMP parallel default(shared) private(i,alow,icount,j,ie,tmp1,tmp2,swild,swild2,n1,n2,k)
+!new37: added private vars
+!$OMP parallel default(shared) private(i,alow,icount,j,ie,tmp1,tmp2,swild,swild2,n1,n2,k,vn1,vn2,tt1,ss1)
 
 !$OMP workshare
       sdbt(1:2,:,:)=0.d0
@@ -4552,12 +4589,24 @@
         do k=kbs(i),nvrt
 !new37
 !          if(isbs(i)==0) then !internal
-          !sdbt(1,k,i)=su2(k,i)-dt*(bcc(1,k,n1)+bcc(1,k,n2))/2.d0-dt*swild2(k,1)
-          !sdbt(2,k,i)=sv2(k,i)-dt*(bcc(2,k,n1)+bcc(2,k,n2))/2.d0-dt*swild2(k,2)
-          sdbt(1,k,i)=su2(k,i)-dt*(bcc(1,k,n1)*dot_product(pframe(1:3,1,n1),sframe2(1:3,1,i))+bcc(2,k,n1)*dot_product(pframe(1:3,2,n1),sframe2(1:3,1,i))+&
-          &bcc(1,k,n2)*dot_product(pframe(1:3,1,n2),sframe2(1:3,1,i))+bcc(2,k,n2)*dot_product(pframe(1:3,2,n2),sframe2(1:3,1,i)))/2.d0-dt*swild2(k,1)
-          sdbt(2,k,i)=sv2(k,i)-dt*(bcc(1,k,n1)*dot_product(pframe(1:3,1,n1),sframe2(1:3,2,i))+bcc(2,k,n1)*dot_product(pframe(1:3,2,n1),sframe2(1:3,2,i))+&
-          &bcc(1,k,n2)*dot_product(pframe(1:3,1,n2),sframe2(1:3,2,i))+bcc(2,k,n2)*dot_product(pframe(1:3,2,n2),sframe2(1:3,2,i)))/2.d0-dt*swild2(k,2)
+          if(ics==1) then
+            sdbt(1,k,i)=su2(k,i)-dt*(bcc(1,k,n1)+bcc(1,k,n2))/2.d0-dt*swild2(k,1)
+            sdbt(2,k,i)=sv2(k,i)-dt*(bcc(2,k,n1)+bcc(2,k,n2))/2.d0-dt*swild2(k,2)
+          else
+            call project_hvec(bcc(1,k,n1),bcc(2,k,n1),pframe(:,:,n1),sframe2(:,:,i),vn1,vn2)
+            call project_hvec(bcc(1,k,n2),bcc(2,k,n2),pframe(:,:,n2),sframe2(:,:,i),tt1,ss1)
+!            tmp1=bcc(1,k,n1)*dot_product(pframe(1:3,1,n1),sframe2(1:3,1,i))+ &
+!     &bcc(2,k,n1)*dot_product(pframe(1:3,2,n1),sframe2(1:3,1,i))
+!            tmp2=bcc(1,k,n2)*dot_product(pframe(1:3,1,n2),sframe2(1:3,1,i))+ &
+!     &bcc(2,k,n2)*dot_product(pframe(1:3,2,n2),sframe2(1:3,1,i))
+            sdbt(1,k,i)=su2(k,i)-dt*(vn1+tt1)/2.d0-dt*swild2(k,1)
+
+!            tmp1=bcc(1,k,n1)*dot_product(pframe(1:3,1,n1),sframe2(1:3,2,i))+ &
+!     &bcc(2,k,n1)*dot_product(pframe(1:3,2,n1),sframe2(1:3,2,i))
+!            tmp2=bcc(1,k,n2)*dot_product(pframe(1:3,1,n2),sframe2(1:3,2,i))+ &
+!     &bcc(2,k,n2)*dot_product(pframe(1:3,2,n2),sframe2(1:3,2,i))
+            sdbt(2,k,i)=sv2(k,i)-dt*(vn2+ss1)/2.d0-dt*swild2(k,2)
+          endif !ics
 !end new37
 !          else !bnd side; use ELM
             !Use elem average b/cos there is no viscosity
@@ -4766,9 +4815,10 @@
       if(myrank==0) write(16,*)'done 1st preparation'
 
       if(ibc==0) then
+!new37: added private var
 !$OMP parallel default(shared) private(i,swild,swild2,swild10,j,ie,eta_min,zmax,ibot_fl, &
 !$OMP tmp0,tmp1,k,n1,n2,xn1,xn2,yn1,yn2,tmp,alow,bdia,cupp,xctr2,yctr2,icount,x10,x20, &
-!$OMP y10,y20,rl10,rl20,bb1,bb2,delta,sintheta,gam,gam2,ibelow,grav3)
+!$OMP y10,y20,rl10,rl20,bb1,bb2,delta,sintheta,gam,gam2,ibelow,grav3,tmp2)
 
 !       Prepare cubic spline (2nd derivative stored in hp_int temporarily)
 !$OMP   workshare
@@ -4958,7 +5008,7 @@
               gam2(kbe(ie)+1:nvrt)=dr_dxy(2,kbe(ie)+1:nvrt,ie)
               call vinter(1,nvrt,1,(zs(k,i)+zs(k-1,i))/2.d0,kbe(ie)+1,nvrt,k,gam,gam2,swild(2),ibelow)
 !new37
-              if(ics==2) then !to sframe
+              if(ics==2) then !to sframe2
                 call project_hvec(swild(1),swild(2),eframe(:,:,ie),sframe2(:,:,i),tmp1,tmp2)
                 swild(1)=tmp1
                 swild(2)=tmp2
@@ -5008,11 +5058,12 @@
 #endif
 
 !     Elem. average ghat1 (in eframe if ics=2). Dimension: m^2/s
+!new37: added private var
 !$OMP parallel do default(shared) private(i,tau_x,tau_y,detadx,detady,dprdx,dprdy,detpdx, &
 !$OMP detpdy,chigamma,ubstar,vbstar,h_bar,bigf1,bigf2,botf1,botf2,big_ubstar,big_vbstar, &
 !$OMP av_df,j,nd,isd,htot,cff1,cff2,tmp1,tmp2,k,rs1,rs2,swild10,horx,hory,swild2,swild, &
 !$OMP itmp1,tmpx1,tmpx2,tmpy1,tmpy2,av_cff1,av_cff2,av_cff3,av_cff2_chi,av_cff3_chi,cff3, &
-!$OMP sav_h_sd,zctr2,sav_c,xtmp,ytmp,wx2,wy2,zrat,bigfa1,bigfa2,grav3) 
+!$OMP sav_h_sd,zctr2,sav_c,xtmp,ytmp,wx2,wy2,zrat,bigfa1,bigfa2,grav3,vn1,vn2,tt1,ss1,n1,n2) 
       do i=1,nea
         ghat1(1,i)=0.d0 !init
         ghat1(2,i)=0.d0
@@ -5108,28 +5159,39 @@
             endif !2/3D
           enddo !k
 !new37
-          ghat1(1,i)=ghat1(1,i)+cff1*(tmp1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+tmp2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
-          &cff3*(xtmp*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+ytmp*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
-          ghat1(2,i)=ghat1(2,i)+cff1*(tmp1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+tmp2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
-          &cff3*(xtmp*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+ytmp*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
+          if(ics==1) then
+            ghat1(1,i)=ghat1(1,i)+cff1*tmp1-cff3*xtmp
+            ghat1(2,i)=ghat1(2,i)+cff1*tmp2-cff3*ytmp
+          else 
+            call project_hvec(tmp1,tmp2,sframe2(:,:,isd),eframe(:,:,i),vn1,vn2)
+            call project_hvec(xtmp,ytmp,sframe2(:,:,isd),eframe(:,:,i),tt1,ss1)
+            ghat1(1,i)=ghat1(1,i)+cff1*vn1-cff3*tt1
+            ghat1(2,i)=ghat1(2,i)+cff1*vn2-cff3*ss1
+          endif !ics
 
           !For tau, pframe and eframe are approx. the same
-          !tau_x=sum(tau(1,isidenode(1:2,isd)))/2.d0
-          !tau_y=sum(tau(2,isidenode(1:2,isd)))/2.d0
-          tau_x=(tau(1,isidenode(1,isd))*dot_product(pframe(1:3,1,isidenode(1,isd)),sframe2(1:3,1,isd))+tau(2,isidenode(1,isd))*dot_product(pframe(1:3,2,isidenode(1,isd)),sframe2(1:3,1,isd))+&
-          &tau(1,isidenode(2,isd))*dot_product(pframe(1:3,1,isidenode(2,isd)),sframe2(1:3,1,isd))+tau(2,isidenode(2,isd))*dot_product(pframe(1:3,2,isidenode(2,isd)),sframe2(1:3,1,isd)))/2.d0
-          tau_y=(tau(1,isidenode(1,isd))*dot_product(pframe(1:3,1,isidenode(1,isd)),sframe2(1:3,2,isd))+tau(2,isidenode(1,isd))*dot_product(pframe(1:3,2,isidenode(1,isd)),sframe2(1:3,2,isd))+&
-          &tau(1,isidenode(2,isd))*dot_product(pframe(1:3,1,isidenode(2,isd)),sframe2(1:3,2,isd))+tau(2,isidenode(2,isd))*dot_product(pframe(1:3,2,isidenode(2,isd)),sframe2(1:3,2,isd)))/2.d0
-!end new37
-          ubstar=sdbt(1,kbs(isd)+1,isd)
-          vbstar=sdbt(2,kbs(isd)+1,isd)
-!new37
-          !ghat1(1,i)=ghat1(1,i)-chi(isd)*dt*cff2*ubstar+dt*cff1*tau_x
-          !ghat1(2,i)=ghat1(2,i)-chi(isd)*dt*cff2*vbstar+dt*cff1*tau_y
-          ghat1(1,i)=ghat1(1,i)-chi(isd)*dt*cff2*(ubstar*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+vbstar*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))+&
-          &dt*cff1*(tau_x*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+tau_y*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
-          ghat1(2,i)=ghat1(2,i)-chi(isd)*dt*cff2*(ubstar*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+vbstar*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))+&
-          &dt*cff1*(tau_x*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+tau_y*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
+          if(ics==1) then
+            tau_x=sum(tau(1,isidenode(1:2,isd)))/2.d0
+            tau_y=sum(tau(2,isidenode(1:2,isd)))/2.d0
+            ubstar=sdbt(1,kbs(isd)+1,isd)
+            vbstar=sdbt(2,kbs(isd)+1,isd)
+          else
+            n1=isidenode(1,isd); n2=isidenode(2,isd)
+            call project_hvec(tau(1,n1),tau(2,n1),pframe(:,:,n1),eframe(:,:,i),vn1,vn2)
+            call project_hvec(tau(1,n2),tau(2,n2),pframe(:,:,n2),eframe(:,:,i),tt1,ss1)
+            tau_x=(vn1+tt1)/2.d0
+            tau_y=(vn2+ss1)/2.d0
+
+            call project_hvec(sdbt(1,kbs(isd)+1,isd),sdbt(2,kbs(isd)+1,isd),sframe2(:,:,isd),eframe(:,:,i),ubstar,vbstar)
+          endif !ics
+
+          ghat1(1,i)=ghat1(1,i)-chi(isd)*dt*cff2*ubstar+dt*cff1*tau_x
+          ghat1(2,i)=ghat1(2,i)-chi(isd)*dt*cff2*vbstar+dt*cff1*tau_y
+
+!            ghat1(1,i)=ghat1(1,i)-chi(isd)*dt*cff2*(ubstar*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+vbstar*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))+&
+!          &dt*cff1*(tau_x*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+tau_y*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
+!            ghat1(2,i)=ghat1(2,i)-chi(isd)*dt*cff2*(ubstar*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+vbstar*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))+&
+!          &dt*cff1*(tau_x*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+tau_y*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
 !end new37
 
           !All terms in F,F^\alpha,f_b except baroclinic
@@ -5209,15 +5271,23 @@
           botf2=botf2+swild10(kbs(isd)+1,2)
 
 !new37
-          !ghat1(1,i)=ghat1(1,i)+cff1*dt*bigf1-cff2*chi(isd)*dt*dt*botf1-cff3*dt*bigfa1
-          !ghat1(2,i)=ghat1(2,i)+cff1*dt*bigf2-cff2*chi(isd)*dt*dt*botf2-cff3*dt*bigfa2
+          if(ics==2) then
+            call project_hvec(bigf1,bigf2,sframe2(:,:,isd),eframe(:,:,i),vn1,vn2)             
+            bigf1=vn1; bigf2=vn2
+            call project_hvec(botf1,botf2,sframe2(:,:,isd),eframe(:,:,i),vn1,vn2)             
+            botf1=vn1; botf2=vn2
+            call project_hvec(bigfa1,bigfa2,sframe2(:,:,isd),eframe(:,:,i),vn1,vn2)             
+            bigfa1=vn1; bigfa2=vn2
+          endif !ics
+          ghat1(1,i)=ghat1(1,i)+cff1*dt*bigf1-cff2*chi(isd)*dt*dt*botf1-cff3*dt*bigfa1
+          ghat1(2,i)=ghat1(2,i)+cff1*dt*bigf2-cff2*chi(isd)*dt*dt*botf2-cff3*dt*bigfa2
 
-          ghat1(1,i)=ghat1(1,i)+cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
-          &cff2*chi(isd)*dt*dt*(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
-          &cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
-          ghat1(2,i)=ghat1(2,i)+cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
-          &cff2*chi(isd)*dt*dt*(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
-          &cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
+!          ghat1(1,i)=ghat1(1,i)+cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
+!          &cff2*chi(isd)*dt*dt*(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
+!          &cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
+!          ghat1(2,i)=ghat1(2,i)+cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
+!          &cff2*chi(isd)*dt*dt*(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
+!          &cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
 !end new37
         enddo !j: nodes and sides
         ghat1(1,i)=ghat1(1,i)/real(i34(i),rkind)
@@ -5232,19 +5302,26 @@
           isd=elside(j,i)
           htot=dps(isd)+sum(eta2(isidenode(1:2,isd)))/2.d0
           sav_h_sd=sum(sav_h(isidenode(1:2,isd)))/2.d0
-!new37
-          bigf1=htot*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd))) 
-          bigf2=htot*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd))) 
-          bigfa1=min(htot,sav_h_sd)*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd))) 
-          bigfa2=min(htot,sav_h_sd)*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd))) 
-          !tmp1=tmp1+av_cff1*dt*bigf1-av_cff2*chi(isd)*dt*dt*botf1-av_cff3*dt*bigfa1
-          !tmp2=tmp2+av_cff1*dt*bigf2-av_cff2*chi(isd)*dt*dt*botf2-av_cff3*dt*bigfa2
-          tmp1=tmp1+av_cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
-          &av_cff2*chi(isd)*dt*dt*botf1-&!(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
-          &av_cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
-          tmp2=tmp2+av_cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
-          &av_cff2*chi(isd)*dt*dt*botf2-&!(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
-          &av_cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
+          bigf1=htot*botf1
+          bigf2=htot*botf2
+          bigfa1=min(htot,sav_h_sd)*botf1
+          bigfa2=min(htot,sav_h_sd)*botf2
+          tmp1=tmp1+av_cff1*dt*bigf1-av_cff2*chi(isd)*dt*dt*botf1-av_cff3*dt*bigfa1
+          tmp2=tmp2+av_cff1*dt*bigf2-av_cff2*chi(isd)*dt*dt*botf2-av_cff3*dt*bigfa2
+
+!new37: reverted b/c botf1 etc are already in elem frame
+!          bigf1=htot*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd))) 
+!          bigf2=htot*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd))) 
+!          bigfa1=min(htot,sav_h_sd)*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,1,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,1,isd))) 
+!          bigfa2=min(htot,sav_h_sd)*(botf1*dot_product(eframe(1:3,1,i),sframe2(1:3,2,isd))+botf2*dot_product(eframe(1:3,2,i),sframe2(1:3,2,isd))) 
+!          !tmp1=tmp1+av_cff1*dt*bigf1-av_cff2*chi(isd)*dt*dt*botf1-av_cff3*dt*bigfa1
+!          !tmp2=tmp2+av_cff1*dt*bigf2-av_cff2*chi(isd)*dt*dt*botf2-av_cff3*dt*bigfa2
+!          tmp1=tmp1+av_cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
+!          &av_cff2*chi(isd)*dt*dt*botf1-&!(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))-&
+!          &av_cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))
+!          tmp2=tmp2+av_cff1*dt*(bigf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
+!          &av_cff2*chi(isd)*dt*dt*botf2-&!(botf1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+botf2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))-&
+!          &av_cff3*dt*(bigfa1*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+bigfa2*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))
 !end new37
         enddo !j
         ghat1(1,i)=ghat1(1,i)+tmp1/real(i34(i),rkind)
@@ -5407,9 +5484,13 @@
           do m=1,i34(ie)
             isd=elside(m,ie)
 !new37
-            !swild2(1:2,m)=bigu(1:2,isd) 
-            swild2(1,m)=bigu(1,isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,ie))+bigu(2,isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,ie))
-            swild2(2,m)=bigu(1,isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,ie))+bigu(2,isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,ie))
+            if(ics==1) then
+              swild2(1:2,m)=bigu(1:2,isd) 
+            else 
+              call project_hvec(bigu(1,isd),bigu(2,isd),sframe2(:,:,isd),eframe(:,:,ie),swild2(1,m),swild2(2,m))
+            endif
+!            swild2(1,m)=bigu(1,isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,ie))+bigu(2,isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,ie))
+!            swild2(2,m)=bigu(1,isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,ie))+bigu(2,isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,ie))
 !end new37
           enddo !m
           dot1=dldxy(id,1,ie)*sum(swild2(1,1:i34(ie)))/real(i34(ie),rkind)+ &
@@ -5827,8 +5908,9 @@
       allocate(swild99(9,nsa),stat=istat)
       if(istat/=0) call parallel_abort('MAIN: fail to allocate swild99')
 !'
+!new37: added private
 !$OMP parallel default(shared) private(j,icount1,icount2,icount3,l,ie,itmp,m,nd, &
-!$OMP tmpx,tmpx1,tmpx2,tmpx3,tmpy,tmpy1,tmpy2,tmpy3,itmp1,i,k,icount)
+!$OMP tmpx,tmpx1,tmpx2,tmpx3,tmpy,tmpy1,tmpy2,tmpy3,itmp1,i,k,icount,vn1,vn2)
 !     Initialize for dry sides and exchange
 
 !$OMP workshare
@@ -5857,10 +5939,14 @@
                 tmpx=eta2(elnode(m,ie))*dldxy(m,1,ie) !eframe if ics=2
                 tmpy=eta2(elnode(m,ie))*dldxy(m,2,ie)
 !new37
-                !deta2_dx(j)=deta2_dx(j)+tmpx !ll if ics=2
-                !deta2_dy(j)=deta2_dy(j)+tmpy
-                deta2_dx(j)=deta2_dx(j)+tmpx*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) !ll if ics=2
-                deta2_dy(j)=deta2_dy(j)+tmpx*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
+                if(ics==2) then
+                  call project_hvec(tmpx,tmpy,eframe(:,:,ie),sframe2(:,:,j),vn1,vn2)
+                  tmpx=vn1; tmpy=vn2
+                endif
+                deta2_dx(j)=deta2_dx(j)+tmpx !ll if ics=2
+                deta2_dy(j)=deta2_dy(j)+tmpy
+!                deta2_dx(j)=deta2_dx(j)+tmpx*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) !ll if ics=2
+!                deta2_dy(j)=deta2_dy(j)+tmpx*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
 !end new37
               enddo !m
             endif !wet at n+1
@@ -5877,22 +5963,30 @@
                 tmpy3=etp(nd)*dldxy(m,2,ie)
             
 !new37
-                !deta1_dx(j)=deta1_dx(j)+tmpx1 
-                !deta1_dy(j)=deta1_dy(j)+tmpy1
-                !dpr_dx(j)=dpr_dx(j)+tmpx2
-                !dpr_dy(j)=dpr_dy(j)+tmpy2
-                !if(dpe(ie)>=tip_dp) then
-                !  detp_dx(j)=detp_dx(j)+tmpx3
-                !  detp_dy(j)=detp_dy(j)+tmpy3
-                !endif
-                deta1_dx(j)=deta1_dx(j)+tmpx1*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy1*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) 
-                deta1_dy(j)=deta1_dy(j)+tmpx1*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy1*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
-                dpr_dx(j)=dpr_dx(j)+tmpx2*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy2*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) 
-                dpr_dy(j)=dpr_dy(j)+tmpx2*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy2*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
-                if(dpe(ie)>=tip_dp) then
-                  detp_dx(j)=detp_dx(j)+tmpx3*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy3*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) 
-                  detp_dy(j)=detp_dy(j)+tmpx3*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy3*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
+                if(ics==2) then
+                  call project_hvec(tmpx1,tmpy1,eframe(:,:,ie),sframe2(:,:,j),vn1,vn2)
+                  tmpx1=vn1; tmpy1=vn2
+                  call project_hvec(tmpx2,tmpy2,eframe(:,:,ie),sframe2(:,:,j),vn1,vn2)
+                  tmpx2=vn1; tmpy2=vn2
+                  call project_hvec(tmpx3,tmpy3,eframe(:,:,ie),sframe2(:,:,j),vn1,vn2)
+                  tmpx3=vn1; tmpy3=vn2
                 endif
+                deta1_dx(j)=deta1_dx(j)+tmpx1 
+                deta1_dy(j)=deta1_dy(j)+tmpy1
+                dpr_dx(j)=dpr_dx(j)+tmpx2
+                dpr_dy(j)=dpr_dy(j)+tmpy2
+                if(dpe(ie)>=tip_dp) then
+                  detp_dx(j)=detp_dx(j)+tmpx3
+                  detp_dy(j)=detp_dy(j)+tmpy3
+                endif
+!                deta1_dx(j)=deta1_dx(j)+tmpx1*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy1*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) 
+!                deta1_dy(j)=deta1_dy(j)+tmpx1*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy1*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
+!                dpr_dx(j)=dpr_dx(j)+tmpx2*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy2*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) 
+!                dpr_dy(j)=dpr_dy(j)+tmpx2*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy2*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
+!                if(dpe(ie)>=tip_dp) then
+!                  detp_dx(j)=detp_dx(j)+tmpx3*dot_product(eframe(1:3,1,ie),sframe2(1:3,1,j))+tmpy3*dot_product(eframe(1:3,2,ie),sframe2(1:3,1,j)) 
+!                  detp_dy(j)=detp_dy(j)+tmpx3*dot_product(eframe(1:3,1,ie),sframe2(1:3,2,j))+tmpy3*dot_product(eframe(1:3,2,ie),sframe2(1:3,2,j))
+!                endif
 !end new37
               enddo !m
             endif
@@ -5948,10 +6042,11 @@
 !     Initialization of the barotropic gradient
       bpgr = 0.d0
 
+!new37: added private
 !$OMP parallel default(shared) private(j,k,node1,node2,htot,taux2,tauy2,hat_gam_x, &
 !$OMP hat_gam_y,tmp1,tmp2,dzz,dfz,ndim,kin,alow,bdia,cupp,tmp,rrhs,soln,gam,dep, &
 !$OMP swild,uths,vths,vnorm,etam,vtan,jblock,jface,dot1,ss,sav_h_sd,sav_alpha_sd, &
-!$OMP zctr2,cff1,zz1,zrat,ub2,vb2,vmag1,vmag2)
+!$OMP zctr2,cff1,zz1,zrat,ub2,vb2,vmag1,vmag2,vn1,vn2,tt1,ss1)
 
 !$OMP workshare
       swild98(1,:,:)=su2(:,:)
@@ -5994,12 +6089,19 @@
           endif
 !          del=hhat(j)*hhat(j)+(theta2*cori(j)*dt*htot)**2 !delta > 0
 !new37
-          !taux2=(tau(1,node1)+tau(1,node2))/2.d0
-          !tauy2=(tau(2,node1)+tau(2,node2))/2.d0
-          taux2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,1,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,1,j))+&
-          &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,1,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,1,j)))/2.d0
-          tauy2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,2,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,2,j))+&
-          &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,2,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,2,j)))/2.d0
+          if(ics==1) then
+            taux2=(tau(1,node1)+tau(1,node2))/2.d0
+            tauy2=(tau(2,node1)+tau(2,node2))/2.d0
+          else
+            call project_hvec(tau(1,node1),tau(2,node1),pframe(:,:,node1),sframe2(:,:,j),vn1,vn2)
+            call project_hvec(tau(1,node2),tau(2,node2),pframe(:,:,node2),sframe2(:,:,j),tt1,ss1)
+            taux2=(vn1+tt1)*0.5d0
+            tauy2=(vn2+ss1)*0.5d0
+          endif !ics
+!          taux2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,1,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,1,j))+&
+!          &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,1,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,1,j)))/2.d0
+!          tauy2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,2,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,2,j))+&
+!          &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,2,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,2,j)))/2.d0
 !end new37
 
           !hat_gam_[xy] has a dimension of m/s
@@ -6119,12 +6221,22 @@
 !-----------------------------
           else !k=nvrt
 !new37
+            if(ics==1) then
+              taux2=(tau(1,node1)+tau(1,node2))/2.d0
+              tauy2=(tau(2,node1)+tau(2,node2))/2.d0
+            else
+              call project_hvec(tau(1,node1),tau(2,node1),pframe(:,:,node1),sframe2(:,:,j),vn1,vn2)
+              call project_hvec(tau(1,node2),tau(2,node2),pframe(:,:,node2),sframe2(:,:,j),tt1,ss1)
+              taux2=(vn1+tt1)*0.5d0
+              tauy2=(vn2+ss1)*0.5d0
+            endif !ics
+
             !taux2=(tau(1,node1)+tau(1,node2))/2.d0
             !tauy2=(tau(2,node1)+tau(2,node2))/2.d0
-            taux2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,1,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,1,j))+&
-            &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,1,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,1,j)))/2.d0
-            tauy2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,2,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,2,j))+&
-            &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,2,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,2,j)))/2.d0
+!            taux2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,1,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,1,j))+&
+!            &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,1,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,1,j)))/2.d0
+!            tauy2=(tau(1,node1)*dot_product(pframe(1:3,1,node1),sframe2(1:3,2,j))+tau(2,node1)*dot_product(pframe(1:3,2,node1),sframe2(1:3,2,j))+&
+!            &tau(1,node2)*dot_product(pframe(1:3,1,node2),sframe2(1:3,2,j))+tau(2,node2)*dot_product(pframe(1:3,2,node2),sframe2(1:3,2,j)))/2.d0
 !end new37
             rrhs(1,kin)=rrhs(1,kin)+dt*taux2
             rrhs(2,kin)=rrhs(2,kin)+dt*tauy2
@@ -6313,7 +6425,7 @@
 
         do mm=1,niter_shap
 
-!$OMP     parallel default(shared) private(i,k,suru,surv,j,id,kin)
+!$OMP     parallel default(shared) private(i,k,suru,surv,j,id,kin,vn1,vn2)
 
 !$OMP     workshare
           bcc=0.d0
@@ -6338,10 +6450,16 @@
                   kin=max(k,kbs(id)+1)
                 endif
 !new37
-                !suru=suru+su2(kin,id) !utmp
-                !surv=surv+sv2(kin,id) !vtmp
-                suru=suru+su2(kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,1,i))+sv2(kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,1,i)) !utmp
-                surv=surv+su2(kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,2,i))+sv2(kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,2,i)) !vtmp
+                if(ics==1) then
+                  suru=suru+su2(kin,id) 
+                  surv=surv+sv2(kin,id)
+                else
+                  call project_hvec(su2(kin,id),sv2(kin,id),sframe2(:,:,id),sframe2(:,:,i),vn1,vn2)
+                  suru=suru+vn1
+                  surv=surv+vn2
+                endif
+!                suru=suru+su2(kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,1,i))+sv2(kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,1,i)) !utmp
+!                surv=surv+su2(kin,id)*dot_product(sframe2(1:3,1,id),sframe2(1:3,2,i))+sv2(kin,id)*dot_product(sframe2(1:3,2,id),sframe2(1:3,2,i)) !vtmp
 !end new37
               enddo !j
 
@@ -6482,10 +6600,11 @@
 !...  For hydrostatic model, this is the vertical vel; for non-hydrostatic
 !...  model, this is only used in transport
 
+!new37: added private
 !$OMP parallel default(shared) private(i,i34inv,n1,n2,n3,n4,av_bdef1,av_bdef2,l, &
 !$OMP xcon,ycon,zcon,area_e,sne,ubar,vbar,m,isd,dhdx,dhdy,dep,swild,ubed,vbed,wbed, &
 !$OMP !bflux0,sum1,ubar1,vbar1,j,jsj,vnor1,vnor2,bflux,surface_flux_ratio, &
-!$OMP wflux_correct)
+!$OMP wflux_correct,vn1,vn2,tt1,ss1)
 
 !$OMP workshare
       we=0.d0 !for dry and below bottom levels; in eframe if ics=2
@@ -6545,8 +6664,16 @@
         do m=1,i34(i) !side
           isd=elside(m,i)
 !new37
-          ubar=ubar+(su2(kbs(isd),isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+sv2(kbs(isd),isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))*i34inv !swild98(1,m,kbs(isd))/i34(i)
-          vbar=vbar+(su2(kbs(isd),isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+sv2(kbs(isd),isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))*i34inv !swild98(2,m,kbs(isd))/i34(i)
+          if(ics==1) then
+            ubar=ubar+su2(kbs(isd),isd)*i34inv 
+            vbar=vbar+sv2(kbs(isd),isd)*i34inv
+          else
+            call project_hvec(su2(kbs(isd),isd),sv2(kbs(isd),isd),sframe2(:,:,isd),eframe(:,:,i),vn1,vn2)
+            ubar=ubar+vn1*i34inv
+            vbar=vbar+vn2*i34inv
+          endif !ics
+!          ubar=ubar+(su2(kbs(isd),isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,1,i))+sv2(kbs(isd),isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,1,i)))*i34inv !swild98(1,m,kbs(isd))/i34(i)
+!          vbar=vbar+(su2(kbs(isd),isd)*dot_product(sframe2(1:3,1,isd),eframe(1:3,2,i))+sv2(kbs(isd),isd)*dot_product(sframe2(1:3,2,isd),eframe(1:3,2,i)))*i34inv !swild98(2,m,kbs(isd))/i34(i)
 !end new37
         enddo !m
 
@@ -6577,10 +6704,23 @@
 
             !In eframe
 !new37
-            ubar=ubar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,1,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,1,i)))*i34inv !swild98(1,j,l)/i34(i) !su2(l,jsj)/3    
-            ubar1=ubar1+(su2(l+1,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,1,i))+sv2(l+1,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,1,i)))*i34inv !swild98(1,j,l+1)/i34(i) !su2(l+1,jsj)/3    
-            vbar=vbar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,2,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,2,i)))*i34inv  !swild98(2,j,l)/i34(i) !sv2(l,jsj)/3    
-            vbar1=vbar1+(su2(l+1,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,2,i))+sv2(l+1,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,2,i)))*i34inv !swild98(2,j,l+1)/i34(i) !sv2(l+1,jsj)/3    
+            if(ics==1) then
+              ubar=ubar+su2(l,jsj)*i34inv 
+              ubar1=ubar1+su2(l+1,jsj)*i34inv 
+              vbar=vbar+sv2(l,jsj)*i34inv 
+              vbar1=vbar1+sv2(l+1,jsj)*i34inv 
+            else
+              call project_hvec(su2(l,jsj),sv2(l,jsj),sframe2(:,:,jsj),eframe(:,:,i),vn1,vn2)
+              call project_hvec(su2(l+1,jsj),sv2(l+1,jsj),sframe2(:,:,jsj),eframe(:,:,i),tt1,ss1)
+              ubar=ubar+vn1*i34inv
+              vbar=vbar+vn2*i34inv
+              ubar1=ubar1+tt1*i34inv
+              vbar1=vbar1+ss1*i34inv
+            endif !ics
+!            ubar=ubar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,1,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,1,i)))*i34inv !swild98(1,j,l)/i34(i) !su2(l,jsj)/3    
+!            ubar1=ubar1+(su2(l+1,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,1,i))+sv2(l+1,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,1,i)))*i34inv !swild98(1,j,l+1)/i34(i) !su2(l+1,jsj)/3    
+!            vbar=vbar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,2,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,2,i)))*i34inv  !swild98(2,j,l)/i34(i) !sv2(l,jsj)/3    
+!            vbar1=vbar1+(su2(l+1,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,2,i))+sv2(l+1,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,2,i)))*i34inv !swild98(2,j,l+1)/i34(i) !sv2(l+1,jsj)/3    
 !end new37
           enddo !j
 
@@ -6634,8 +6774,16 @@
           do j=1,i34(i)
             jsj=elside(j,i)
 !new37
-            ubar=ubar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,1,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,1,i)))*i34inv 
-            vbar=vbar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,2,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,2,i)))*i34inv
+            if(ics==1) then
+              ubar=ubar+su2(l,jsj)*i34inv
+              vbar=vbar+sv2(l,jsj)*i34inv
+            else
+              call project_hvec(su2(l,jsj),sv2(l,jsj),sframe2(:,:,jsj),eframe(:,:,i),vn1,vn2)
+              ubar=ubar+vn1*i34inv
+              vbar=vbar+vn2*i34inv
+            endif !ics
+!            ubar=ubar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,1,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,1,i)))*i34inv 
+!            vbar=vbar+(su2(l,jsj)*dot_product(sframe2(1:3,1,jsj),eframe(1:3,2,i))+sv2(l,jsj)*dot_product(sframe2(1:3,2,jsj),eframe(1:3,2,i)))*i34inv
 !end new37
           enddo !j
           wflux_correct=(ubar*sne(1,l)+vbar*sne(2,l)+we(l,i)*sne(3,l))*surface_flux_ratio*area_e(l) !fraction of surface flux

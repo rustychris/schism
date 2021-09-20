@@ -2459,6 +2459,7 @@
 !              endif !ics
 !              endif !Z or S
 
+!new37: need to reproj su2,sv2 if ics=2
               uu2(k,i)=uu2(k,i)+su2(k,isd)/distj(isd)*real(nfac,rkind)
               vv2(k,i)=vv2(k,i)+sv2(k,isd)/distj(isd)*real(nfac,rkind)
               weit=weit+1._rkind/distj(isd)*real(nfac,rkind)
