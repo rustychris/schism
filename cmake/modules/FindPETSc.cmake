@@ -27,6 +27,8 @@ set(PETSC_VALID_COMPONENTS
   CXX
   Fortran)
 
+message(status "Top of FindPETSc.cmake")
+
 if(NOT PETSc_FIND_COMPONENTS)
   set(PETSC_LANGUAGE_BINDINGS "C")
 else()

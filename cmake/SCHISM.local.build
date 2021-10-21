@@ -18,7 +18,8 @@
 set (TVD_LIM VL CACHE STRING "Flux limiter")
 set (PREC_EVAP OFF CACHE BOOLEAN "Include precipitation and evaporation calculation")
 ##Older versions of GOTM (3.*) have issues with netcdf v4, so are not maintained
-set (USE_GOTM OFF CACHE BOOLEAN "Use GOTM turbulence model. This just enables the build -- GOTM must still be selected in param.nml")
+set (USE_GOTM ON CACHE BOOLEAN "Use GOTM turbulence model. This just enables the build -- GOTM must still be selected in param.nml")
+set ( GOTM_DIR /home/rusty/local/gotm CACHE STRING "Path to installed GOTM" )
 set (USE_HA OFF CACHE BOOLEAN "Enable harmonic analysis output modules")
 set( USE_MARSH OFF CACHE BOOLEAN "Use marsh module")
 
@@ -36,7 +37,7 @@ set( USE_ICM OFF   CACHE BOOLEAN "Use ICM module")
 set( ICM_PH OFF   CACHE BOOLEAN "Use pH module inside ICM")
 set( USE_COSINE OFF   CACHE BOOLEAN "Use CoSiNE module")
 set( USE_FIB OFF   CACHE BOOLEAN "Use fecal indicating bacteria module")
-set( USE_SED OFF   CACHE BOOLEAN "Use sediment module")
+set( USE_SED ON   CACHE BOOLEAN "Use sediment module")
 set( USE_FABM OFF   CACHE BOOLEAN "FABM BGC model interface")
 #If FABM is on, need to set FABM_BASE (after cloning from Joseph's fork: https://github.com/josephzhang8/fabm.git).
 #Use master branch of the fork
