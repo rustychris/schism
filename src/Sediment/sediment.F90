@@ -331,7 +331,15 @@
           !Modify depth, bed(), but not bottom() or bed_frac
           do l=1,ne_dump
             ie=ie_dump(l) !global index
-            if(iegl(ie)%rank==myrank) then
+
+            !RH: allow negative indices to indicate a direct elevation change at nodes
+            if(ie<0) then
+               if(ipgl(-ie)%rank==myrank) then
+                  i=ipgl(-ie)%id ! local node index
+                  dp(i)=dp(i)-vol_dump(l) ! interpret as elevation change
+                  ! ignore bed, bed_mass.
+               endif
+            else if(iegl(ie)%rank==myrank) then
               i=iegl(ie)%id !local index
               cff=vol_dump(l)/area(i) !m
               tmp=bed(top,i,ithck)+cff
